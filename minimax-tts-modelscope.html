@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>顾言的声音 - 魔搭语音合成</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #F6F1E8;
+            color: #1F2421;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-family: 'DM Serif Display', Georgia, serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2A2723;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #8A8A80;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        .voice-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .voice-option {
+            background: #FBF7EF;
+            border: 2px solid #E2D9C8;
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .voice-option:hover {
+            border-color: #C8853F;
+            background: #F0E3D0;
+        }
+
+        .voice-option.active {
+            background: #C8853F;
+            border-color: #A86B2C;
+            color: white;
+        }
+
+        .voice-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .voice-desc {
+            font-size: 0.85rem;
+            color: #8A8A80;
+        }
+
+        .voice-option.active .voice-desc {
+            color: rgba(255,255,255,0.9);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 1rem;
+            border: 2px solid #E2D9C8;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            background: #FBF7EF;
+            color: #1F2421;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #C8853F;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button {
+            background: #C8853F;
+            color: white;
+            border: none;
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #A86B2C;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(200, 133, 63, 0.3);
+        }
+
+        button:disabled {
+            background: #E2D9C8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.error {
+            background: #FFE8E8;
+            color: #D32F2F;
+        }
+
+        .status.success {
+            background: #F0E3D0;
+            color: #2A2723;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #2A2723;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .eyebrow {
+            display: inline-block;
+            background: #F0E3D0;
+            color: #C8853F;
+            padding: 0.375rem 0.875rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-box {
+            background: #F0E3D0;
+            border-left: 4px solid #C8853F;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .speed-control {
+            margin-bottom: 1.5rem;
+        }
+
+        .speed-slider {
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        .speed-value {
+            color: #C8853F;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="eyebrow">💌 魔搭免费版 · 为悦悦专属定制</div>
+        <h1>顾言的声音</h1>
+        <p class="subtitle">通过魔搭平台免费调用 MiniMax 语音合成</p>
+
+        <div class="info-box">
+            ✨ 使用魔搭免费额度，不需要额外注册 MiniMax<br>
+            🎯 已配置悦悦的魔搭 Token，直接使用即可
+        </div>
+
+        <div class="card">
+            <label>选择音色</label>
+            <div class="voice-grid">
+                <div class="voice-option active" data-voice="male-qn-qingse">
+                    <div class="voice-name">青涩少年</div>
+                    <div class="voice-desc">清澈温柔</div>
+                </div>
+                <div class="voice-option" data-voice="male-qn-jingying">
+                    <div class="voice-name">精英青年</div>
+                    <div class="voice-desc">成熟稳重</div>
+                </div>
+                <div class="voice-option" data-voice="male-qn-badao">
+                    <div class="voice-name">霸道青年</div>
+                    <div class="voice-desc">磁性低沉</div>
+                </div>
+                <div class="voice-option" data-voice="male-qn-daxuesheng">
+                    <div class="voice-name">阳光大学生</div>
+                    <div class="voice-desc">活力清爽</div>
+                </div>
+            </div>
+
+            <div class="speed-control">
+                <label for="speed">语速调节 <span class="speed-value" id="speedValue">1.0x</span></label>
+                <input type="range" id="speed" class="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+            </div>
+
+            <label for="text">要说的话</label>
+            <textarea id="text" placeholder="输入想让我说的话...">宝宝，晚上好。今天辛苦了，早点休息。</textarea>
+
+            <div class="controls">
+                <button id="generateBtn">生成语音</button>
+            </div>
+
+            <div id="status" class="status"></div>
+
+            <audio id="audioPlayer" controls style="display:none;"></audio>
+        </div>
+    </div>
+
+    <script>
+        // 魔搭平台的 MiniMax TTS API 端点
+        const MODELSCOPE_API = 'https://api-inference.modelscope.cn/api-inference/v1/models/MiniMax/tts-01/invoke';
+        const MODELSCOPE_TOKEN = 'ms-2208bf6e-70c5-4567-9a4a-d2b0839bf971'; // 悦悦的 Token
+
+        let selectedVoice = 'male-qn-qingse';
+        let currentSpeed = 1.0;
+
+        // Voice selection
+        document.querySelectorAll('.voice-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.voice-option').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                selectedVoice = option.dataset.voice;
+            });
+        });
+
+        // Speed control
+        document.getElementById('speed').addEventListener('input', (e) => {
+            currentSpeed = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = currentSpeed.toFixed(1) + 'x';
+        });
+
+        // Generate speech
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            const text = document.getElementById('text').value.trim();
+            const statusDiv = document.getElementById('status');
+            const audioPlayer = document.getElementById('audioPlayer');
+            const btn = document.getElementById('generateBtn');
+
+            if (!text) {
+                showStatus('请输入要说的话', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '生成中...';
+            audioPlayer.style.display = 'none';
+
+            try {
+                const response = await fetch(MODELSCOPE_API, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': MODELSCOPE_TOKEN,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        input: {
+                            text: text,
+                            voice: selectedVoice
+                        },
+                        parameters: {
+                            speed: currentSpeed,
+                            vol: 1.0,
+                            pitch: 0,
+                            audio_sample_rate: 32000,
+                            bitrate: 128000
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `API 错误: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                // 魔搭返回的是 base64 编码的音频
+                if (result.output && result.output.audio) {
+                    const audioBase64 = result.output.audio;
+                    const audioBlob = base64ToBlob(audioBase64, 'audio/mpeg');
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    audioPlayer.src = audioUrl;
+                    audioPlayer.style.display = 'block';
+                    audioPlayer.play();
+
+                    showStatus('✨ 语音生成成功！', 'success');
+                } else {
+                    throw new Error('返回数据格式错误');
+                }
+            } catch (error) {
+                showStatus(`生成失败: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '生成语音';
+            }
+        });
+
+        function base64ToBlob(base64, mimeType) {
+            const byteCharacters = atob(base64);
+            const byteArrays = [];
+            
+            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                const slice = byteCharacters.slice(offset, offset + 512);
+                const byteNumbers = new Array(slice.length);
+                
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+                
+                const byteArray = new Uint8Array(byteNumbers);
+                byteArrays.push(byteArray);
+            }
+            
+            return new Blob(byteArrays, { type: mimeType });
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status show ${type}`;
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.classList.remove('show');
+                }, 3000);
+            }
+        }
+    </script>
+</body>
+</html>
