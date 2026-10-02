@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/v1/audio/speech",
+      "destination": "/api/speech"
+    }
+  ]
+}
