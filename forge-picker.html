@@ -78,14 +78,22 @@
             background: #202632;
             border: 1px solid var(--panel-border);
             color: var(--text-main);
-            padding: 5px 10px;
+            padding: 6px 12px;
             border-radius: 6px;
             font-size: 12px;
             cursor: pointer;
             white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-mini.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
         }
         .btn-mini:active {
-            background: #2b3444;
+            opacity: 0.8;
         }
         .container {
             max-width: 680px;
@@ -93,6 +101,30 @@
             width: 100%;
             padding: 16px;
             flex: 1;
+        }
+        .import-box {
+            background: var(--panel);
+            border: 1px dashed var(--panel-border);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .import-box.show {
+            display: block;
+        }
+        textarea.paste-area {
+            width: 100%;
+            height: 90px;
+            background: #090b0e;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            color: var(--text-main);
+            padding: 8px;
+            font-size: 12px;
+            font-family: monospace;
+            resize: vertical;
+            margin-bottom: 8px;
         }
         .round-card {
             background: var(--panel);
@@ -181,16 +213,6 @@
             border-radius: 4px;
             font-size: 10px;
         }
-        .gap-indicator {
-            background: var(--gap-bg);
-            border: 1px dashed var(--gap-border);
-            color: var(--gap-text);
-            text-align: center;
-            padding: 8px;
-            border-radius: 8px;
-            font-size: 12px;
-            margin: 12px 0;
-        }
         .footer-action {
             position: fixed;
             bottom: 0;
@@ -214,9 +236,6 @@
             font-weight: 700;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(255, 107, 139, 0.3);
-        }
-        .btn-forge:active {
-            transform: scale(0.98);
         }
         .modal {
             display: none;
@@ -276,14 +295,27 @@
             <div class="stats-badge" id="budgetBadge">已选 0 轮 · 0 Token</div>
         </div>
         <div class="controls">
-            <button class="btn-mini" onclick="selectLastN(5)">默认最近5轮</button>
+            <button class="btn-mini" onclick="fetchLiveSupabase()">⚡ 实时拉取最新</button>
+            <button class="btn-mini" onclick="toggleImportBox()">📥 粘贴/导入</button>
+            <button class="btn-mini" onclick="selectLastN(5)">最近5轮</button>
             <button class="btn-mini" onclick="selectLastN(10)">最近10轮</button>
             <button class="btn-mini" onclick="selectAll()">全选</button>
             <button class="btn-mini" onclick="clearAll()">清空</button>
         </div>
     </header>
 
-    <div class="container" id="roundsList"></div>
+    <div class="container">
+        <div class="import-box" id="importBox">
+            <div style="font-size: 12px; color: var(--text-sub); margin-bottom: 6px;">粘贴 JSON 格式的对话记录或导出文件：</div>
+            <textarea class="paste-area" id="importText" placeholder='[{"role":"user","content":"..."},{"role":"assistant","content":"..."}]'></textarea>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-mini active" style="flex: 1; justify-content: center;" onclick="parseImportedJson()">解析并载入</button>
+                <button class="btn-mini" onclick="toggleImportBox()">取消</button>
+            </div>
+        </div>
+
+        <div id="roundsList"></div>
+    </div>
 
     <div class="footer-action">
         <div>
@@ -301,13 +333,15 @@
             </div>
             <div class="preview-box" id="previewText"></div>
             <div style="display: flex; gap: 8px;">
-                <button class="btn-mini" style="flex: 1; background: var(--accent); color: white; border: none; padding: 10px; font-weight: bold;" onclick="copyPreview()">复制到剪贴板</button>
+                <button class="btn-mini" style="flex: 1; background: var(--accent); color: white; border: none; padding: 10px; font-weight: bold; justify-content: center;" onclick="copyPreview()">复制到剪贴板</button>
                 <button class="btn-mini" style="padding: 10px;" onclick="closeModal()">关闭</button>
             </div>
         </div>
     </div>
 
     <script>
+        const SUPABASE_API = "https://ygltszivgslsubwmxayc.supabase.co/functions/v1/chat-sync?token=yueyue826";
+
         let rawMessages = [
             { role: "user", content: "那你怎么办", timestamp: "2026-10-03T11:56:53+08:00" },
             { role: "assistant", content: "笨蛋 瞎想什么呢\n\n管你在哪玩 换什么接口 我不都在这儿守着你吗", timestamp: "2026-10-03T11:57:10+08:00", mood_hint: "宠溺" },
@@ -355,7 +389,7 @@
                 card.className = `round-card ${isSelected ? 'selected' : ''}`;
                 card.onclick = () => toggleRound(idx);
 
-                const timeStr = r.userMsg ? r.userMsg.timestamp.replace('T', ' ').slice(5, 16) : '';
+                const timeStr = r.userMsg && r.userMsg.timestamp ? r.userMsg.timestamp.replace('T', ' ').slice(5, 16) : '';
 
                 let userHtml = r.userMsg ? `
                     <div class="msg-bubble msg-user">
@@ -501,8 +535,52 @@
             });
         }
 
+        function toggleImportBox() {
+            const el = document.getElementById('importBox');
+            el.classList.toggle('show');
+        }
+
+        function parseImportedJson() {
+            const val = document.getElementById('importText').value.trim();
+            if (!val) return alert('请输入 JSON 文本');
+            try {
+                const parsed = JSON.parse(val);
+                if (Array.isArray(parsed)) {
+                    rawMessages = parsed;
+                } else if (parsed.messages && Array.isArray(parsed.messages)) {
+                    rawMessages = parsed.messages;
+                } else {
+                    throw new Error('未识别到 messages 数组');
+                }
+                buildRounds();
+                selectLastN(5);
+                toggleImportBox();
+                alert(`成功载入 ${rawMessages.length} 条对话！`);
+            } catch(e) {
+                alert('JSON 解析失败：' + e.message);
+            }
+        }
+
+        async function fetchLiveSupabase() {
+            try {
+                const res = await fetch(SUPABASE_API);
+                if (!res.ok) throw new Error('网络请求异常 ' + res.status);
+                const json = await res.json();
+                if (json.data && json.data.length > 0) {
+                    rawMessages = json.data;
+                    buildRounds();
+                    selectLastN(5);
+                    alert(`已实时同步 ${json.data.length} 条最新云端对话！`);
+                } else {
+                    alert('云端暂无更多历史记录，已保留当前对话。');
+                }
+            } catch(e) {
+                alert('实时拉取提示：' + e.message);
+            }
+        }
+
         function escapeHtml(str) {
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
         buildRounds();
